@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Planta de Biometano Comemorativo</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Roboto+Mono:wght@400;700&display=swap');
+
+        :root {
+            --primary: #00b4d8;
+            --secondary: #90be6d;
+            --bg-color: #0b0f19;
+            --panel-bg: #151b29;
+            --text-light: #edf2f4;
+            --warning: #f9c74f;
+            --danger: #ff4d4d;
+        }
+
+        body {
+            /* 100dvh é o segredo para o Safari Mobile não criar scroll! */
+            height: 100dvh;
+            width: 100vw;
+            margin: 0;
+            padding: 2dvh 3vw;
+            background-color: var(--bg-color);
+            color: var(--text-light);
+            font-family: 'Montserrat', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            box-sizing: border-box;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            /* Previne seleção de texto ao clicar muito rápido no iOS */
+        }
+
+        .header-section {
+            flex: 0 0 auto;
+            margin-bottom: 1.5dvh;
+            text-align: center;
+            width: 100%;
+        }
+
+        h1 {
+            color: var(--primary);
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 0;
+            font-size: clamp(1.2rem, 3.5dvh, 1.8rem);
+        }
+
+        .subtitle {
+            color: var(--secondary);
+            margin: 0;
+            font-family: 'Roboto Mono', monospace;
+            font-size: clamp(0.7rem, 2dvh, 0.9rem);
+        }
+
+        /* Layout Dinâmico: Empilha no iPhone, lado a lado no MacBook */
+        .dashboard {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5dvh;
+            justify-content: flex-start;
+            align-items: center;
+            width: 100%;
+            max-width: 900px;
+            z-index: 2;
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+
+        /* Se for uma tela larga (MacBook/PC), fica lado a lado */
+        @media (min-width: 700px) {
+            .dashboard {
+                flex-direction: row;
+                align-items: stretch;
+                justify-content: center;
+            }
+
+            .visual-panel,
+            .control-panel {
+                max-width: 50% !important;
+                flex: 1;
+            }
+        }
+
+        /* Painel Visual (Tanque e Sensores) */
+        .visual-panel {
+            background: var(--panel-bg);
+            padding: 2dvh;
+            border-radius: 15px;
+            border: 1px solid #2b344a;
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+            flex: 0 1 auto;
+            min-height: 0;
+        }
+
+        .sensors {
+            display: flex;
+            flex-direction: column;
+            gap: 1dvh;
+            font-family: 'Roboto Mono', monospace;
+            font-size: clamp(0.6rem, 1.8dvh, 0.8rem);
+            background: #0b0f19;
+            padding: 1.5dvh;
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+
+        .sensor-item span {
+            display: block;
+            font-weight: bold;
+            font-size: clamp(0.8rem, 2dvh, 1rem);
+            color: var(--primary);
+            transition: color 0.3s;
+        }
+
+        .sensor-item.alert span {
+            color: var(--danger);
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0.5;
+                color: red;
+            }
+        }
+
+        /* Chama do Metano */
+        .reactor-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .flame-container {
+            height: clamp(40px, 8dvh, 70px);
+            display: flex;
+            align-items: flex-end;
+            margin-bottom: 5px;
+        }
+
+        .flame {
+            width: 30px;
+            height: 30px;
+            background: transparent;
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            transform: rotate(-45deg);
+            transition: 0.5s all;
+            opacity: 0;
+        }
+
+        .flame.lit {
+            background: linear-gradient(to top, #00b4d8 0%, #0077b6 100%);
+            box-shadow: 0 0 20px #00b4d8, 0 0 40px #0077b6;
+            height: clamp(50px, 10dvh, 80px);
+            animation: flicker 0.1s infinite alternate;
+            opacity: 1;
+        }
+
+        @keyframes flicker {
+            0% {
+                transform: rotate(-45deg) scale(0.95);
+            }
+
+            100% {
+                transform: rotate(-45deg) scale(1.05);
+            }
+        }
+
+        .burner {
+            width: 50px;
+            height: 8px;
+            background: #555;
+            border-radius: 4px;
+            margin-bottom: 5px;
+        }
+
+        /* Biodigestor Mágico Flexível */
+        .digester {
+            width: clamp(120px, 25vw, 150px);
+            height: clamp(140px, 22dvh, 200px);
+            border: 4px solid #555;
+            border-radius: 15px 15px 30px 30px;
+            position: relative;
+            overflow: hidden;
+            background: #222;
+            transition: transform 0.1s;
+        }
+
+        .shake {
+            animation: shakeReator 0.4s infinite;
+        }
+
+        @keyframes shakeReator {
+            0% {
+                transform: translate(1px, 1px) rotate(0deg);
+            }
+
+            25% {
+                transform: translate(-1px, -2px) rotate(-1deg);
+            }
+
+            50% {
+                transform: translate(-3px, 0px) rotate(1deg);
+            }
+
+            75% {
+                transform: translate(3px, 2px) rotate(0deg);
+            }
+
+            100% {
+                transform: translate(1px, -1px) rotate(-1deg);
+            }
+        }
+
+        .biomass {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 20%;
+            background: linear-gradient(to top, #3a5a40, #588157);
+            transition: height 0.5s ease, background 0.5s;
+        }
+
+        .biogas-fill {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 0%;
+            background: rgba(0, 180, 216, 0.2);
+            transition: height 0.5s ease, background 0.5s;
+        }
+
+        .bubbles {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.4) 15%, transparent 16%);
+            background-size: 20px 25px;
+            animation: bubbleUp 2s linear infinite;
+            display: none;
+        }
+
+        .bubbles.fast {
+            animation: bubbleUp 0.3s linear infinite;
+            background-image: radial-gradient(rgba(249, 199, 79, 0.6) 20%, transparent 21%);
+        }
+
+        @keyframes bubbleUp {
+            100% {
+                background-position: 0 -50px;
+            }
+        }
+
+        /* Controles - Botões e Barras */
+        .control-panel {
+            background: var(--panel-bg);
+            padding: 2dvh;
+            border-radius: 15px;
+            border: 1px solid #2b344a;
+            flex: 1 1 auto;
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 1dvh;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+            min-height: 0;
+        }
+
+        .stat-group {
+            font-family: 'Roboto Mono', monospace;
+            flex: 0 0 auto;
+        }
+
+        .stat-label {
+            font-size: clamp(0.6rem, 1.5dvh, 0.8rem);
+            color: #a0aec0;
+            margin-bottom: 3px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: clamp(10px, 2dvh, 15px);
+            background: #0b0f19;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #2b344a;
+        }
+
+        .progress-fill {
+            height: 100%;
+            transition: width 0.3s ease, background-color 0.3s;
+            width: 0%;
+        }
+
+        #vol-fill {
+            background: var(--secondary);
+        }
+
+        #pur-fill {
+            background: var(--warning);
+        }
+
+        .log-box {
+            background: #0b0f19;
+            border: 1px solid #2b344a;
+            border-radius: 5px;
+            padding: 1dvh;
+            font-family: 'Roboto Mono', monospace;
+            font-size: clamp(0.6rem, 1.5dvh, 0.75rem);
+            color: #a0aec0;
+            height: clamp(30px, 5dvh, 40px);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            flex: 0 0 auto;
+        }
+
+        /* Botões espremidos para caber e flexíveis */
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1dvh;
+            flex: 1 1 auto;
+        }
+
+        button {
+            -webkit-appearance: none;
+            /* Corrige renderização de botão no Safari */
+            background: #1e293b;
+            color: var(--text-light);
+            border: 1px solid #334155;
+            padding: 0;
+            border-radius: 8px;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: clamp(0.65rem, 1.5dvh, 0.85rem);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .btn-action {
+            background: rgba(144, 190, 109, 0.1);
+            border-color: var(--secondary);
+            color: var(--secondary);
+        }
+
+        .btn-upgrade {
+            background: rgba(0, 180, 216, 0.1);
+            border-color: var(--primary);
+            color: var(--primary);
+            grid-column: span 2;
+        }
+
+        .btn-dog {
+            background: rgba(249, 199, 79, 0.1);
+            border: 1px dashed var(--warning);
+            color: var(--warning);
+        }
+
+        /* Animações CSS via JS */
+        .falling-emoji {
+            position: fixed;
+            font-size: clamp(30px, 5dvh, 45px);
+            z-index: 999;
+            transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+            pointer-events: none;
+        }
+
+        .floating-text {
+            position: fixed;
+            font-weight: bold;
+            font-size: clamp(1rem, 2.5dvh, 1.2rem);
+            z-index: 1000;
+            animation: floatUp 1.2s ease-out forwards;
+            pointer-events: none;
+            text-shadow: 0 0 5px #000;
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(-8dvh) scale(1.5);
+                opacity: 0;
+            }
+        }
+
+        /* MODAIS AJUSTADOS PARA NÃO QUEBRAREM A TELA */
+        #login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Roboto Mono', monospace;
+            color: #0f0;
+            text-align: left;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        #login-console {
+            width: 100%;
+            max-width: 500px;
+            font-size: clamp(0.7rem, 2dvh, 0.9rem);
+            margin-bottom: 2dvh;
+        }
+
+        #login-btn {
+            display: none;
+            background: #0f0;
+            color: #000;
+            padding: 2dvh 4vw;
+            font-size: clamp(1rem, 2dvh, 1.2rem);
+            animation: pulseSoft 2s infinite;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(11, 15, 25, 0.95);
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        /* Apenas a caixa de texto final pode ter scroll se o celular for MUITO pequeno */
+        .modal-content {
+            background: var(--panel-bg);
+            border: 2px solid var(--primary);
+            padding: 3dvh;
+            max-width: 600px;
+            border-radius: 15px;
+            box-shadow: 0 0 40px rgba(0, 180, 216, 0.2);
+            line-height: 1.5;
+            text-align: center;
+            max-height: 90dvh;
+            overflow-y: auto;
+        }
+
+        @keyframes pulseSoft {
+            0% {
+                box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 15px rgba(0, 255, 0, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 255, 0, 0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- TELA DE LOGIN ENGRAÇADA -->
+    <div id="login-overlay">
+        <h2 style="margin: 0 0 10px 0; color: #fff; text-align: center; font-size: clamp(1.2rem, 3dvh, 1.5rem);">SISTEMA
+            DE BIORREFINARIA v4.0</h2>
+        <div id="login-console"></div>
+        <button id="login-btn" onclick="startSystem()">>> ACESSAR PLANTA <<< /button>
+    </div>
+
+    <!-- UI PRINCIPAL -->
+    <div class="header-section">
+        <h1>Planta de Upgrading</h1>
+        <div class="subtitle">Biorrefinaria Experimental de Afeto</div>
+    </div>
+
+    <div class="dashboard">
+        <!-- VISUAL E SENSORES -->
+        <div class="visual-panel">
+            <div class="sensors">
+                <div class="sensor-item" id="sensor-ph">pH: <span id="val-ph">6.8</span></div>
+                <div class="sensor-item" id="sensor-temp">Temp: <span id="val-temp">35°C</span></div>
+                <div class="sensor-item" id="sensor-vfa">VFA: <span id="val-vfa"
+                        style="color:var(--secondary)">Normal</span></div>
+            </div>
+
+            <div class="reactor-area">
+                <div class="flame-container">
+                    <div class="flame" id="flame"></div>
+                </div>
+                <div class="burner"></div>
+
+                <div class="digester" id="digester-box">
+                    <div class="biogas-fill" id="gas-fill"></div>
+                    <div class="bubbles" id="bubbles"></div>
+                    <div class="biomass" id="biomass"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTROLES -->
+        <div class="control-panel">
+            <div class="stat-group">
+                <div class="stat-label"><span>Volume de Biogás</span> <span id="vol-text">10%</span></div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="vol-fill" style="width: 10%;"></div>
+                </div>
+            </div>
+
+            <div class="stat-group">
+                <div class="stat-label"><span>Concentração CH₄</span> <span id="pur-text">20%</span></div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="pur-fill" style="width: 20%;"></div>
+                </div>
+            </div>
+
+            <div class="log-box" id="sys-log">> [SISTEMA] Aguardando biomassa...</div>
+
+            <div class="btn-grid">
+                <button class="btn-action" onclick="feedDigester()">🌿 Jogar Biomassa</button>
+                <button class="btn-action" onclick="mixSubstrate()">🔄 Ligar Agitador</button>
+                <button class="btn-dog" onclick="callCookie()">🐶 Jogar Cookie</button>
+                <button class="btn-dog" onclick="callDonut()">🍩 Jogar Donut</button>
+                <button class="btn-upgrade" onclick="upgradeGas()">⚙️ Ligar Filtros (CH₄)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARTA FINAL -->
+    <div class="modal" id="end-modal">
+        <div class="modal-content">
+            <h2 style="color: var(--primary); margin-top:0; font-size: clamp(1.2rem, 3dvh, 1.8rem);">🔥 CHAMA ACESA!
+            </h2>
+            <p style="font-family: 'Roboto Mono', monospace; font-size: clamp(0.7rem, 2dvh, 0.9rem);">
+                <strong>Certificado:</strong> 100% Energia Positiva</p>
+            <p style="text-align: justify; color: #a0aec0; font-size: clamp(0.8rem, 2dvh, 0.95rem);">
+                Parabéns, Fabi! Você provou mais uma vez que domina a engenharia do biogás e do coração. A chama deste
+                novo ciclo foi acesa com força máxima!
+            </p>
+            <p style="text-align: justify; color: #a0aec0; font-size: clamp(0.8rem, 2dvh, 0.95rem);">
+                Assim como o processo de upgrading transforma o bruto em algo extremamente valioso, sua dedicação e
+                carinho transformam a vida de quem está ao seu redor. Você é uma pessoa incrivelmente querida!
+            </p>
+            <p style="text-align: justify; color: #a0aec0; font-size: clamp(0.8rem, 2dvh, 0.95rem);">
+                Que este novo ano tenha a estabilidade fofa do Cookie, a energia caótica maravilhosa do Donut e muitas
+                felicidades junto com o Maiki!
+            </p>
+            <p
+                style="font-weight: bold; color: var(--warning); font-size: clamp(1.1rem, 2.5dvh, 1.3rem); margin-top: 15px;">
+                Feliz Aniversário! 🎂🎈🐶
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // BLOQUEIO MÁXIMO DE SCROLL PARA IOS / SAFARI
+        document.addEventListener('touchmove', function (e) {
+            // Permite rolar apenas se estiver lendo a carta final no modal (caso o celular seja bem pequeno)
+            if (e.target.closest('.modal-content')) return;
+            e.preventDefault();
+        }, { passive: false });
+
+        // LÓGICA DE LOGIN ENGRAÇADO
+        const consoleLog = document.getElementById('login-console');
+        const loginBtn = document.getElementById('login-btn');
+        const loginOverlay = document.getElementById('login-overlay');
+
+        const bootSequence = [
+            "> Escaneando biometria capilar...",
+            "> Especialista em Biogás detectada.",
+            "> Verificando níveis de cafeína no sangue: [CRÍTICOS - REABASTECER]",
+            "> Identificando nome: DRA. FABIANE",
+            "> Autenticação: NÍVEL CHEFONA 👑",
+            "> Carregando módulo de Aniversário...",
+            "> ACESSO LIBERADO."
+        ];
+
+        window.onload = () => {
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i < bootSequence.length) {
+                    const div = document.createElement('div');
+                    div.innerText = bootSequence[i];
+                    if (bootSequence[i].includes("CHEFONA") || bootSequence[i].includes("ACESSO")) div.style.color = "#ffeb3b";
+                    consoleLog.appendChild(div);
+                    i++;
+                } else {
+                    clearInterval(interval);
+                    loginBtn.style.display = "block";
+                }
+            }, 800);
+        };
+
+        function startSystem() {
+            loginOverlay.style.display = 'none';
+        }
+
+        // VARIÁVEIS DA PLANTA
+        let volume = 10;
+        let purity = 20;
+
+        // ELEMENTOS UI
+        const volFill = document.getElementById('vol-fill');
+        const purFill = document.getElementById('pur-fill');
+        const volText = document.getElementById('vol-text');
+        const purText = document.getElementById('pur-text');
+        const logBox = document.getElementById('sys-log');
+        const biomass = document.getElementById('biomass');
+        const gasFill = document.getElementById('gas-fill');
+        const bubbles = document.getElementById('bubbles');
+        const flame = document.getElementById('flame');
+        const digesterBox = document.getElementById('digester-box');
+
+        // SENSORES
+        const valPh = document.getElementById('val-ph');
+        const valTemp = document.getElementById('val-temp');
+        const valVfa = document.getElementById('val-vfa');
+        const sensorPh = document.getElementById('sensor-ph');
+
+        function log(msg) { logBox.innerHTML = `> ${msg}`; }
+
+        // ANIMAÇÕES
+        function dropEmoji(emoji) {
+            const el = document.createElement('div');
+            el.innerText = emoji;
+            el.className = 'falling-emoji';
+            el.style.top = '-50px';
+            el.style.left = (Math.random() * 40 + 30) + 'vw';
+            document.body.appendChild(el);
+
+            const rect = digesterBox.getBoundingClientRect();
+            setTimeout(() => {
+                el.style.top = (rect.top + (rect.height / 3)) + 'px';
+                el.style.left = (rect.left + (rect.width / 2) - 20) + 'px';
+                el.style.transform = `rotate(${Math.random() * 360}deg) scale(0.5)`;
+                el.style.opacity = '0';
+            }, 50);
+
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        function floatText(text, color) {
+            const el = document.createElement('div');
+            el.innerText = text;
+            el.className = 'floating-text';
+            el.style.color = color;
+
+            const rect = digesterBox.getBoundingClientRect();
+            el.style.top = (rect.top - 10) + 'px';
+            el.style.left = (rect.left + (rect.width / 2) - 40) + 'px';
+
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1200);
+        }
+
+        function triggerConfetti() {
+            var duration = 4000;
+            var end = Date.now() + duration;
+            (function frame() {
+                confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, zIndex: 3000, colors: ['#00b4d8', '#90be6d', '#f9c74f'] });
+                confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, zIndex: 3000, colors: ['#00b4d8', '#90be6d', '#f9c74f'] });
+                if (Date.now() < end) requestAnimationFrame(frame);
+            }());
+        }
+
+        function triggerShake() {
+            digesterBox.classList.add('shake');
+            setTimeout(() => digesterBox.classList.remove('shake'), 1500);
+        }
+
+        // ATUALIZAÇÃO DO JOGO E SENSORES
+        function updateUI() {
+            if (volume > 100) volume = 100;
+            if (purity > 100) purity = 100;
+
+            volFill.style.width = volume + '%';
+            purFill.style.width = purity + '%';
+            volText.innerText = Math.floor(volume) + '%';
+            purText.innerText = Math.floor(purity) + '%';
+
+            biomass.style.height = (volume * 0.4) + '%';
+            gasFill.style.height = volume + '%';
+
+            if (purity > 85) purFill.style.background = "var(--primary)";
+            else if (purity > 50) purFill.style.background = "var(--warning)";
+
+            if (volume > 20) bubbles.style.display = 'block';
+
+            if (volume >= 100 && purity >= 100) {
+                log("[SUCESSO ABSOLUTO] Metano Puro! Acendendo chama...");
+                flame.classList.add('lit');
+                bubbles.classList.remove('fast');
+                triggerConfetti();
+
+                setTimeout(() => { document.getElementById('end-modal').style.display = 'flex'; }, 3500);
+            }
+        }
+
+        // AÇÕES DOS BOTÕES
+        function feedDigester() {
+            if (volume >= 100) return;
+            volume += 15; purity -= 5; if (purity < 0) purity = 0;
+
+            valPh.innerText = "5.8"; sensorPh.classList.add("alert");
+            valTemp.innerText = "32°C";
+            valVfa.innerText = "ALTO"; valVfa.style.color = "var(--danger)";
+
+            dropEmoji('🌿'); dropEmoji('🍎'); dropEmoji('💩');
+            floatText('+15% Volume', 'var(--secondary)');
+            log("Sobrecarga! pH caiu para ácido. Alerta de VFA!");
+
+            digesterBox.style.transform = "scale(1.05)";
+            setTimeout(() => digesterBox.style.transform = "scale(1)", 200);
+            updateUI();
+        }
+
+        function mixSubstrate() {
+            if (volume >= 100 && purity >= 100) return;
+            volume += 5; purity += 5;
+
+            valVfa.innerText = "Estável"; valVfa.style.color = "var(--warning)";
+
+            dropEmoji('🌀');
+            floatText('Misturou!', '#fff');
+            log("Agitador ON. Crosta rompida, gases liberados.");
+            updateUI();
+        }
+
+        function callCookie() {
+            if (volume >= 100 && purity >= 100) return;
+            purity += 20;
+
+            valPh.innerText = "7.2"; sensorPh.classList.remove("alert");
+            valVfa.innerText = "Ótimo"; valVfa.style.color = "var(--secondary)";
+            biomass.style.background = "linear-gradient(to top, #90be6d, #43aa8b)";
+
+            dropEmoji('🐶'); setTimeout(() => dropEmoji('🍪'), 150); setTimeout(() => dropEmoji('✨'), 300);
+            floatText('pH OK!', 'var(--primary)');
+            log("Cookie entrou! Fofura extrema atuou como buffer de pH.");
+            updateUI();
+        }
+
+        function callDonut() {
+            if (volume >= 100 && purity >= 100) return;
+            volume += 25;
+
+            valTemp.innerText = "45°C🔥"; valTemp.style.color = "var(--danger)";
+            bubbles.classList.add('fast');
+            triggerShake();
+
+            dropEmoji('🐶'); setTimeout(() => dropEmoji('🍩'), 150); setTimeout(() => dropEmoji('💥'), 300);
+            floatText('CINÉTICA X1000!', 'var(--warning)');
+            log("Donut no tanque! Fase termofílica ativada, caos instaurado!");
+            updateUI();
+        }
+
+        function upgradeGas() {
+            if (purity >= 100) return;
+            purity += 30;
+
+            dropEmoji('⚙️'); dropEmoji('💨');
+            floatText('+30% Pureza CH₄', 'var(--primary)');
+            log("Filtros ativados. Lavando o biogás, tchau CO2!");
+            updateUI();
+        }
+    </script>
+</body>
+
+</html>
