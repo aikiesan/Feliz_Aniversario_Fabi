@@ -563,7 +563,7 @@
                 <button class="btn-action" onclick="feedDigester()">🌿 Jogar Biomassa</button>
                 <button class="btn-action" onclick="mixSubstrate()">🔄 Ligar Agitador</button>
                 <button class="btn-dog" onclick="callCookie()">🐶 Jogar Cookie</button>
-                <button class="btn-dog" onclick="callDonut()">🍩 Jogar Donut</button>
+                <button class="btn-dog" onclick="callBrownie()">🍩 Jogar Brownie</button>
                 <button class="btn-upgrade" onclick="upgradeGas()">⚙️ Ligar Filtros (CH₄)</button>
             </div>
         </div>
@@ -575,7 +575,8 @@
             <h2 style="color: var(--primary); margin-top:0; font-size: clamp(1.2rem, 3dvh, 1.8rem);">🔥 CHAMA ACESA!
             </h2>
             <p style="font-family: 'Roboto Mono', monospace; font-size: clamp(0.7rem, 2dvh, 0.9rem);">
-                <strong>Certificado:</strong> 100% Energia Positiva</p>
+                <strong>Certificado:</strong> 100% Energia Positiva
+            </p>
             <p style="text-align: justify; color: #a0aec0; font-size: clamp(0.8rem, 2dvh, 0.95rem);">
                 Parabéns, Fabi! Você provou mais uma vez que domina a engenharia do biogás e do coração. A chama deste
                 novo ciclo foi acesa com força máxima!
@@ -585,7 +586,7 @@
                 carinho transformam a vida de quem está ao seu redor. Você é uma pessoa incrivelmente querida!
             </p>
             <p style="text-align: justify; color: #a0aec0; font-size: clamp(0.8rem, 2dvh, 0.95rem);">
-                Que este novo ano tenha a estabilidade fofa do Cookie, a energia caótica maravilhosa do Donut e muitas
+                Que este novo ano tenha a estabilidade fofa do Cookie, a energia caótica maravilhosa do Brownie e muitas
                 felicidades junto com o Maiki!
             </p>
             <p
@@ -783,7 +784,7 @@
             updateUI();
         }
 
-        function callDonut() {
+        function callBrownie() {
             if (volume >= 100 && purity >= 100) return;
             volume += 25;
 
@@ -793,7 +794,7 @@
 
             dropEmoji('🐶'); setTimeout(() => dropEmoji('🍩'), 150); setTimeout(() => dropEmoji('💥'), 300);
             floatText('CINÉTICA X1000!', 'var(--warning)');
-            log("Donut no tanque! Fase termofílica ativada, caos instaurado!");
+            log("Brownie no tanque! Fase termofílica ativada, caos instaurado!");
             updateUI();
         }
 
